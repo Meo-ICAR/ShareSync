@@ -19,6 +19,7 @@ class SharePointDocumentTypesSeeder extends Seeder
     {
         $regexById = [
             1 => '/casel|carichi.*pendenti/i',
+            2 => '/^(?!.*casel).*carichi.*pendenti/i',
             3 => '/dichiarazione.*sostitutiva.*certificato.*onorabilit|dich\w*[\s._]+(sos|sot)/i',
             5 => null,
             6 => '/12\s*ore/i',
@@ -28,7 +29,7 @@ class SharePointDocumentTypesSeeder extends Seeder
             10 => '/(30|45)\s*ore\s*ivass|ivass\s*(30|45)\s*ore/i',
             27 => '/carta.*identit|c\.i\.|identit|documenti.*personali|residenza/i',
             35 => '/^(?!.*identit).*(tessera.*sanitaria|codice.*fiscale)/i',
-            48 => '/attestato.*formazione.*oam/i',
+            48 => null,
             57 => '/^(?!.*12\s*ore).*(esito.*prova|prova.*esito|prova.*valut|prov\.?\s*valut|super\w*\.?.*prova)/i',
             36 => '/p\.?\s?iva|partita.*iva|attribuzione.*iva|ateco/i',
             37 => '/visura/i',
@@ -54,6 +55,7 @@ class SharePointDocumentTypesSeeder extends Seeder
             ['code' => 'ENASARCO', 'name' => 'Enasarco', 'regex' => '/enasarco/i'],
             ['code' => 'RECESSO_RISOLUZIONE', 'name' => 'Recesso / Risoluzione contrattuale', 'regex' => '/recesso|risoluzione/i'],
             ['code' => 'ESITO_PROVA_OAM', 'name' => 'Esito prova valutativa OAM', 'regex' => '/^(?!.*12\s*ore).*(esito.*prova|prova.*esito|prova.*valut|prov\.?\s*valut|super\w*\.?.*prova)/i'],
+            ['code' => 'ATTESTATO_FORMAZIONE_OAM', 'name' => 'Attestato Formazione OAM', 'regex' => '/attestato.*formazione.*oam/i'],
             ['code' => 'LETTERA_IMPEGNO_ASSUNZIONE', 'name' => 'Lettera impegno assunzione', 'regex' => '/lettera.*(impegno|assunzione)/i'],
             ['code' => 'ATTESTATO_COMPASS', 'name' => 'Attestato corso Compass', 'regex' => '/compass/i'],
             ['code' => 'ATTESTATO_ANTIRICICLAGGIO', 'name' => 'Attestato Antiriciclaggio', 'regex' => '/antiriciclaggio/i'],
