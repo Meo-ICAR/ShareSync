@@ -34,7 +34,7 @@ class SharePointDocumentTypesSeeder extends Seeder
             37 => '/visura/i',
             38 => '/curriculum|\bcv\b/i',
             39 => '/liberatoria/i',
-            40 => '/tassa.*ivass|ivass.*168/i',
+            40 => '/tassa.*ivass|ivass.*168|168\s*(€|euro)/i',
             44 => '/contratto.*(collaborazione|agenzia)/i',
             45 => '/busta.*paga|cedolino|\bcu\b/i',
             46 => '/estratto.*conto/i',
@@ -54,6 +54,11 @@ class SharePointDocumentTypesSeeder extends Seeder
             ['code' => 'ENASARCO', 'name' => 'Enasarco', 'regex' => '/enasarco/i'],
             ['code' => 'RECESSO_RISOLUZIONE', 'name' => 'Recesso / Risoluzione contrattuale', 'regex' => '/recesso|risoluzione/i'],
             ['code' => 'ESITO_PROVA_OAM', 'name' => 'Esito prova valutativa OAM', 'regex' => '/^(?!.*12\s*ore).*(esito.*prova|prova.*esito|prova.*valut|prov\.?\s*valut|super\w*\.?.*prova)/i'],
+            ['code' => 'LETTERA_IMPEGNO_ASSUNZIONE', 'name' => 'Lettera impegno assunzione', 'regex' => '/lettera.*(impegno|assunzione)/i'],
+            ['code' => 'ATTESTATO_COMPASS', 'name' => 'Attestato corso Compass', 'regex' => '/compass/i'],
+            ['code' => 'ATTESTATO_ANTIRICICLAGGIO', 'name' => 'Attestato Antiriciclaggio', 'regex' => '/antiriciclaggio/i'],
+            ['code' => 'EVIDENZA_ISCRIZIONE_RUI', 'name' => 'Evidenza iscrizione RUI', 'regex' => '/iscrizione.*rui|sezione.*rui/i'],
+            ['code' => 'MODELLO_ELETTRONICO_INTERMEDIARI', 'name' => 'Modello elettronico intermediari', 'regex' => '/modello.*elettronico.*intermediari/i'],
             ['code' => 'DIFENSIVA_LEGALE', 'name' => 'Difensiva / Studio legale', 'regex' => '/difensiv|studio.*legale|avv\./i'],
         ];
 
