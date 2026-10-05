@@ -22,5 +22,9 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "laravel-boost@claude-plugins-official": true,
+    "laraclaude@edulazaro": true
   }
 }
