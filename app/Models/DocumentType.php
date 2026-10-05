@@ -2,26 +2,29 @@
 
 namespace App\Models;
 
-use Database\Factories\DocumentTypeFactory;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class DocumentType extends Model
+class DocumentType extends Model implements HasMedia
 {
-    /** @use HasFactory<DocumentTypeFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, InteractsWithMedia, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+   // protected $connection = 'mysql';
+
+    protected $orderBy = 'name';
+
+    protected $orderDirection = 'asc';
+
     protected $fillable = [
         'name',
         'description',
+        'document_url',
         'code',
         'codegroup',
         'slug',
@@ -35,24 +38,20 @@ class DocumentType extends Model
         'is_principal',
         'is_client',
         'is_practice',
-        'trigger_field',
         'is_signed',
         'is_monitored',
-        'renewed_by_id',
-        'document_url',
-        'training_hours',
-        'training_organization',
-        'duration',
-        'duration_unit',
-        'nature',
         'doctype',
         'cellposition',
+        'renewed_by_id',
+        'duration',
+        'duration_unit',
         'emitted_by',
         'is_sensible',
         'is_template',
         'is_stored',
         'regex',
         'is_endMonth',
+        'document_typable',
         'is_AiAbstract',
         'is_AiCheck',
         'AiPattern',
@@ -63,57 +62,76 @@ class DocumentType extends Model
         'created_by',
         'updated_by',
         'deleted_by',
-        'is_versioned',
-        'document_typable',
-        'trigger_state',
-        'trigger_value',
-        'exclude_field',
-        'exclude_state',
+        'trigger_field', 'trigger_state', 'trigger_value', 'exclude_field', 'exclude_state',
         'exclude_value',
-        'expire_days_before',
+
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'is_person' => 'boolean',
+        'is_company' => 'boolean',
+        'is_employee' => 'boolean',
+        'is_agent' => 'boolean',
+        'is_principal' => 'boolean',
+        'is_client' => 'boolean',
+        'is_practice' => 'boolean',
+        'is_signed' => 'boolean',
+        'is_monitored' => 'boolean',
+        'is_sensible' => 'boolean',
+        'is_template' => 'boolean',
+        'is_stored' => 'boolean',
+        'is_endMonth' => 'boolean',
+        'is_AiAbstract' => 'boolean',
+        'is_AiCheck' => 'boolean',
+        'allow_auto_verification' => 'boolean',
+        'notify_days_before' => 'array',
+        'priority' => 'integer',
+        'duration' => 'integer',
+        'min_confidence' => 'integer',
+        'retention_years' => 'integer',
+    ];
+
+    public function durationCalculate(Carbon $emittedAt): ?Carbon
     {
-        return [
-            'priority' => 'integer',
-            'is_person' => 'boolean',
-            'is_company' => 'boolean',
-            'is_employee' => 'boolean',
-            'is_agent' => 'boolean',
-            'is_principal' => 'boolean',
-            'is_client' => 'boolean',
-            'is_practice' => 'boolean',
-            'is_signed' => 'boolean',
-            'is_monitored' => 'boolean',
-            'renewed_by_id' => 'integer',
-            'training_hours' => 'integer',
-            'duration' => 'integer',
-            'is_sensible' => 'boolean',
-            'is_template' => 'boolean',
-            'is_stored' => 'boolean',
-            'is_endMonth' => 'boolean',
-            'is_AiAbstract' => 'boolean',
-            'is_AiCheck' => 'boolean',
-            'min_confidence' => 'integer',
-            'allow_auto_verification' => 'boolean',
-            'notify_days_before' => 'array',
-            'retention_years' => 'integer',
-            'created_by' => 'integer',
-            'updated_by' => 'integer',
-            'deleted_by' => 'integer',
-            'is_versioned' => 'boolean',
-            'expire_days_before' => 'integer',
-        ];
+        // Calcola la data di scadenza
+        if (! $emittedAt) {
+            return null;
+        }
+        if (! $this->is_monitored) {
+            return null;
+        }
+        $expirationDate = $emittedAt->copy();
+        switch ($this->duration_unit) {
+            case 'days':
+                $expirationDate = $expirationDate->addDays($this->duration);
+                break;
+            case 'months':
+                $expirationDate = $expirationDate->addMonths($this->duration);
+                break;
+            case 'years':
+                $expirationDate = $expirationDate->addYears($this->duration);
+                break;
+            default:
+                $expirationDate = null;
+                break;
+        }
+        if ($this->is_endMonth && $expirationDate) {
+            $expirationDate = $expirationDate->endOfMonth();
+        }
+
+        return $expirationDate;
     }
 
     /**
-     * Get the document type that renews this document type.
+     * Relazione con i documenti fisici caricati.
+     */
+    public function documents()
+    {
+        return $this->hasMany(Document::class);
+    }
+
+    /**
+     * Relazione Gerarchica: Il mio Responsabile diretto
      */
     public function renewedBy(): BelongsTo
     {
@@ -121,10 +139,13 @@ class DocumentType extends Model
     }
 
     /**
-     * Get the document types renewed by this document type.
+     * I Task a cui è associato questo tipo di documento
      */
-    public function renewals(): HasMany
+    public function tasks(): BelongsToMany
     {
-        return $this->hasMany(DocumentType::class, 'renewed_by_id');
+        return $this
+            ->belongsToMany(Task::class, 'task_document_types')
+            ->withPivot('is_required')
+            ->withTimestamps();
     }
 }

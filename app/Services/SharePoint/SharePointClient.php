@@ -2,6 +2,7 @@
 
 namespace App\Services\SharePoint;
 
+use Carbon\Carbon;
 use Generator;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -94,6 +95,7 @@ class SharePointClient
                     etag: $item['eTag'] ?? null,
                     webUrl: $item['webUrl'] ?? null,
                     size: (int) ($item['size'] ?? 0),
+                    modifiedAt: isset($item['lastModifiedDateTime']) ? Carbon::parse($item['lastModifiedDateTime']) : null,
                 );
             }
         }

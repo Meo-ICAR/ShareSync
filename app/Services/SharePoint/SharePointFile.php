@@ -2,6 +2,8 @@
 
 namespace App\Services\SharePoint;
 
+use Carbon\Carbon;
+
 final class SharePointFile
 {
     public function __construct(
@@ -11,5 +13,6 @@ final class SharePointFile
         public readonly ?string $etag,
         public readonly ?string $webUrl,
         public readonly int $size,
+        public readonly ?Carbon $modifiedAt = null,
     ) {}
 }
