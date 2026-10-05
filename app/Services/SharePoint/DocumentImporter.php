@@ -4,9 +4,12 @@ namespace App\Services\SharePoint;
 
 use App\Models\Document;
 use RuntimeException;
+use Throwable;
 
 class DocumentImporter
 {
+    private const MAX_URL_LENGTH = 255;
+
     public function __construct(
         private readonly SharePointClient $client,
         private readonly FornitoreMatcher $matcher,
@@ -41,8 +44,14 @@ class DocumentImporter
             }
 
             foreach ($this->classifier->classify($file->path) as $classification) {
-                $action = $commit ? $this->store($file, $match, $classification) : 'dry_run';
-                $rows[] = $this->row($file, $collaborator, $match, $match->kind, $classification, $action);
+                $error = null;
+                try {
+                    $action = $commit ? $this->store($file, $match, $classification) : 'dry_run';
+                } catch (Throwable $e) {
+                    $action = 'error';
+                    $error = $e->getMessage();
+                }
+                $rows[] = $this->row($file, $collaborator, $match, $match->kind, $classification, $action, $error);
             }
         }
 
@@ -65,13 +74,38 @@ class DocumentImporter
             return 'exists';
         }
 
-        Document::create([
+        $attributes = $this->attributes($file, $match, $c);
+
+        // Un record importato in precedenza senza tipo viene ricollegato, non duplicato.
+        if ($c->documentTypeId !== null) {
+            $untyped = Document::where('source_app', 'sharepoint')
+                ->where('app_id', $file->id)
+                ->whereNull('document_type_id')
+                ->first();
+
+            if ($untyped !== null) {
+                $untyped->update($attributes);
+
+                return 'updated';
+            }
+        }
+
+        Document::create($attributes);
+
+        return 'created';
+    }
+
+    /** @return array<string, mixed> */
+    private function attributes(SharePointFile $file, FornitoreMatch $match, Classification $c): array
+    {
+        return [
             'company_id' => $match->fornitore->company_id,
             'documentable_type' => 'fornitore',
             'documentable_id' => $match->fornitore->id,
             'document_type_id' => $c->documentTypeId,
             'name' => $file->name,
-            'document_url' => $file->webUrl,
+            // document_url è varchar(255): l'URL completo resta sempre in metadata.web_url.
+            'document_url' => $file->webUrl !== null && strlen($file->webUrl) <= self::MAX_URL_LENGTH ? $file->webUrl : null,
             'status' => 'uploaded',
             'sync_status' => 'synced',
             'source_app' => 'sharepoint',
@@ -81,17 +115,16 @@ class DocumentImporter
             'ai_confidence_score' => $c->confidence,
             'metadata' => [
                 'path' => $file->path,
+                'web_url' => $file->webUrl,
                 'match' => $match->kind,
                 'classification_source' => $c->source,
                 'needs_review' => $match->kind !== 'exact' || $c->documentTypeId === null,
             ],
-        ]);
-
-        return 'created';
+        ];
     }
 
     /** @return array<string, mixed> */
-    private function row(SharePointFile $file, ?string $collaborator, ?FornitoreMatch $match, string $kind, ?Classification $c, string $action): array
+    private function row(SharePointFile $file, ?string $collaborator, ?FornitoreMatch $match, string $kind, ?Classification $c, string $action, ?string $error = null): array
     {
         return [
             'path' => $file->path,
@@ -103,6 +136,7 @@ class DocumentImporter
             'confidence' => $c?->confidence,
             'source' => $c?->source,
             'action' => $action,
+            'error' => $error,
         ];
     }
 }

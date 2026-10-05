@@ -29,8 +29,9 @@ class DocumentClassifier
         $fileName = pathinfo((string) end($segments), PATHINFO_FILENAME);
         $folderNo = count($segments) >= 3 && preg_match('/^(\d+)\s*-/', $segments[1], $m) ? (int) $m[1] : null;
 
+        // Le regex valgono su tutti i tipi; l'hint di cartella restringe solo i candidati dell'AI.
+        $hits = $this->types()->filter(fn ($t) => $this->matches($t->regex, $fileName))->values();
         $candidates = $this->candidatesFor($folderNo);
-        $hits = $candidates->filter(fn ($t) => $this->matches($t->regex, $fileName))->values();
 
         if ($hits->count() === 1) {
             return [$this->finalize($hits->first(), (int) config('sharepoint_import.rule_confidence'), 'rule')];
@@ -101,7 +102,8 @@ class DocumentClassifier
 
     private function finalize(DocumentType $type, int $confidence, string $source): Classification
     {
-        $min = $type->min_confidence ?? (int) config('sharepoint_import.default_min_confidence');
+        // Soglia propria dell'import: la colonna document_types.min_confidence (70 per tutti) è condivisa con altre app.
+        $min = (int) config('sharepoint_import.default_min_confidence');
 
         return new Classification($confidence >= $min ? $type->id : null, $confidence, $source);
     }

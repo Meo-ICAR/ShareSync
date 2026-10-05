@@ -17,6 +17,8 @@ class DocumentImporterTest extends TestCase
 
     private Fornitori $fornitore;
 
+    private string $f1Url = 'u1';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,8 +60,8 @@ class DocumentImporterTest extends TestCase
                 ['id' => 'c2', 'name' => 'Sconosciuto Tizio', 'folder' => ['childCount' => 1]],
                 ['id' => 'loose', 'name' => 'readme.pdf', 'file' => [], 'size' => 1, 'eTag' => 'e0', 'webUrl' => 'u0'],
             ]]),
-            'graph.microsoft.com/v1.0/drives/D/items/c1/children*' => Http::response(['value' => [
-                ['id' => 'f1', 'name' => 'Visura Camerale 2026.pdf', 'file' => [], 'size' => 10, 'eTag' => 'e1', 'webUrl' => 'u1'],
+            'graph.microsoft.com/v1.0/drives/D/items/c1/children*' => fn () => Http::response(['value' => [
+                ['id' => 'f1', 'name' => 'Visura Camerale 2026.pdf', 'file' => [], 'size' => 10, 'eTag' => 'e1', 'webUrl' => $this->f1Url],
                 ['id' => 'f2', 'name' => 'Casellar. Giudiz. e Carichi pendenti.pdf', 'file' => [], 'size' => 20, 'eTag' => 'e2', 'webUrl' => 'u2'],
             ]]),
             'graph.microsoft.com/v1.0/drives/D/items/c2/children*' => Http::response(['value' => [
@@ -130,6 +132,80 @@ class DocumentImporterTest extends TestCase
 
         $this->assertSame('vecchio', $old->fresh()->name);
         $this->assertSame('local', $old->fresh()->source_app);
+    }
+
+    public function test_rerun_links_previously_untyped_rows_instead_of_duplicating(): void
+    {
+        $this->app->instance(AiClassifier::class, new class implements AiClassifier
+        {
+            public function classify(string $path, array $candidates): array
+            {
+                return [];
+            }
+        });
+        $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+        $this->assertSame(1, Document::where('app_id', 'f2')->whereNull('document_type_id')->count());
+
+        $this->app->instance(AiClassifier::class, new class implements AiClassifier
+        {
+            public function classify(string $path, array $candidates): array
+            {
+                return [
+                    ['document_type_id' => 1, 'confidence' => 95],
+                    ['document_type_id' => 2, 'confidence' => 92],
+                ];
+            }
+        });
+        $rows = $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+
+        $f2 = Document::where('app_id', 'f2')->get();
+        $this->assertCount(2, $f2);
+        $this->assertSame(0, $f2->whereNull('document_type_id')->count());
+        $this->assertSame(3, Document::count());
+        $actions = array_count_values(array_column(array_filter($rows, fn ($r) => str_ends_with($r['path'], 'pendenti.pdf')), 'action'));
+        $this->assertSame(['updated' => 1, 'created' => 1], $actions);
+    }
+
+    public function test_url_longer_than_column_is_kept_in_metadata_and_document_url_left_null(): void
+    {
+        $long = 'https://sp/'.str_repeat('a', 300);
+        $this->f1Url = $long;
+
+        $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+
+        $doc = Document::where('app_id', 'f1')->first();
+        $this->assertNull($doc->document_url);
+        $this->assertSame($long, $doc->metadata['web_url']);
+    }
+
+    public function test_short_url_is_stored_in_document_url_and_metadata(): void
+    {
+        $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+
+        $doc = Document::where('app_id', 'f1')->first();
+        $this->assertSame('u1', $doc->document_url);
+        $this->assertSame('u1', $doc->metadata['web_url']);
+    }
+
+    public function test_a_failing_row_is_reported_and_does_not_stop_the_import(): void
+    {
+        Document::creating(function (Document $d) {
+            if ($d->app_id === 'f1') {
+                throw new \RuntimeException('boom');
+            }
+        });
+
+        try {
+            $rows = $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+        } finally {
+            Document::flushEventListeners();
+        }
+
+        $errors = array_values(array_filter($rows, fn ($r) => $r['action'] === 'error'));
+        $this->assertCount(1, $errors);
+        $this->assertFalse(Document::where('app_id', 'f1')->exists());
+        $this->assertStringContainsString('boom', $errors[0]['error']);
+        $this->assertSame(2, Document::where('app_id', 'f2')->count());
     }
 
     public function test_missing_root_folder_throws(): void

@@ -100,15 +100,38 @@ class DocumentClassifierTest extends TestCase
         $this->assertNull($r[0]->documentTypeId);
     }
 
-    public function test_confidence_below_type_min_confidence_leaves_type_null(): void
+    public function test_confidence_below_configured_threshold_leaves_type_null(): void
     {
-        $this->type(9, 'Altro', null, 80);
+        config(['sharepoint_import.default_min_confidence' => 80]);
+        $this->type(9, 'Altro', null);
 
         $r = $this->classifier([['document_type_id' => 9, 'confidence' => 60]])
             ->classify('Rossi/6 - ALTRO/foglio.pdf');
 
         $this->assertNull($r[0]->documentTypeId);
         $this->assertSame(60, $r[0]->confidence);
+    }
+
+    public function test_confidence_at_default_threshold_of_55_keeps_the_type(): void
+    {
+        $this->type(9, 'Altro', null, 70); // la colonna min_confidence del tipo non conta per l'import
+
+        $r = $this->classifier([['document_type_id' => 9, 'confidence' => 55]])
+            ->classify('Rossi/6 - ALTRO/foglio.pdf');
+
+        $this->assertSame(9, $r[0]->documentTypeId);
+    }
+
+    public function test_regex_hit_ignores_the_folder_hint(): void
+    {
+        $this->type(8, 'Contratto di collaborazione', null); // rientra nell'hint, quindi il filtro non è vuoto
+        $this->type(7, 'Rappel', '/rappel/i'); // il nome non rientra nell'hint della cartella 1
+
+        $r = $this->classifier()->classify('Rossi/1 - CONTRATTO DI COLLABORAZIONE/Lettera Rappel 2025.pdf');
+
+        $this->assertSame(7, $r[0]->documentTypeId);
+        $this->assertSame('rule', $r[0]->source);
+        $this->assertSame([], $this->aiCalls);
     }
 
     public function test_folder_hint_restricts_ai_candidates(): void

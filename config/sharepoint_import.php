@@ -2,7 +2,7 @@
 
 return [
     'root' => '1 - COLLABORATORI ATTIVI',
-    'default_min_confidence' => 70,
+    'default_min_confidence' => 55,
     'rule_confidence' => 90,
     'fuzzy_threshold' => 85,
 

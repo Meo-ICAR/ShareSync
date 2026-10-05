@@ -31,7 +31,7 @@ class ImportSharePointDocuments extends Command
 
         $path = storage_path('app/sharepoint-import-'.now()->format('Ymd-His').'.csv');
         $handle = fopen($path, 'w');
-        fputcsv($handle, ['path', 'collaborator', 'fornitore_id', 'fornitore', 'match', 'document_type_id', 'confidence', 'source', 'action']);
+        fputcsv($handle, ['path', 'collaborator', 'fornitore_id', 'fornitore', 'match', 'document_type_id', 'confidence', 'source', 'action', 'error']);
         foreach ($rows as $row) {
             fputcsv($handle, array_values($row));
         }
