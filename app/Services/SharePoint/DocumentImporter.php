@@ -13,11 +13,12 @@ class DocumentImporter
     public function __construct(
         private readonly SharePointClient $client,
         private readonly FornitoreMatcher $matcher,
+        private readonly EmployeeMatcher $employeeMatcher,
         private readonly DocumentClassifier $classifier,
     ) {}
 
     /** @return list<array<string, mixed>> */
-    public function run(string $rootName, bool $commit): array
+    public function run(string $rootName, bool $commit, string $subjectType = 'fornitore'): array
     {
         $root = $this->client->findChildFolder('root', $rootName)
             ?? throw new RuntimeException("Cartella radice non trovata: {$rootName}");
@@ -36,9 +37,9 @@ class DocumentImporter
             }
 
             $collaborator = $segments[0];
-            $match = $matches[$collaborator] ??= $this->matcher->match($collaborator);
+            $match = $matches[$collaborator] ??= $this->matchSubject($collaborator, $subjectType);
 
-            if ($match->fornitore === null) {
+            if ($match->subject === null) {
                 $rows[] = $this->row($file, $collaborator, null, 'none', null, 'skipped_no_fornitore');
 
                 continue;
@@ -53,22 +54,22 @@ class DocumentImporter
                     $error = $e->getMessage();
                 }
                 if ($commit && $error === null && $classification->documentTypeId !== null) {
-                    $touched[$match->fornitore->id.'|'.$classification->documentTypeId] = [$match->fornitore->id, $classification->documentTypeId];
+                    $touched[$match->documentableType.'|'.$match->subject->id.'|'.$classification->documentTypeId] = [$match->documentableType, (string) $match->subject->id, $classification->documentTypeId];
                 }
                 $rows[] = $this->row($file, $collaborator, $match, $match->kind, $classification, $action, $error);
             }
         }
 
-        foreach ($touched as [$fornitoreId, $documentTypeId]) {
-            $this->supersedeOlderVersions($fornitoreId, $documentTypeId);
+        foreach ($touched as [$documentableType, $documentableId, $documentTypeId]) {
+            $this->supersedeOlderVersions($documentableType, $documentableId, $documentTypeId);
         }
 
         return $rows;
     }
 
-    private function store(SharePointFile $file, FornitoreMatch $match, Classification $c): string
+    private function store(SharePointFile $file, SubjectMatch $match, Classification $c): string
     {
-        $exists = Document::withTrashed()
+        $existing = Document::withTrashed()
             ->where('source_app', 'sharepoint')
             ->where('app_id', $file->id)
             ->when(
@@ -76,9 +77,16 @@ class DocumentImporter
                 fn ($q) => $q->whereNull('document_type_id'),
                 fn ($q) => $q->where('document_type_id', $c->documentTypeId)
             )
-            ->exists();
+            ->first();
 
-        if ($exists) {
+        if ($existing !== null) {
+            // Backfill delle date solo per i record importati prima che venissero gestite.
+            if ($existing->emitted_at === null && $existing->expires_at === null && $file->modifiedAt !== null) {
+                $existing->update(['emitted_at' => $file->modifiedAt]);
+
+                return 'backfilled';
+            }
+
             return 'exists';
         }
 
@@ -107,11 +115,11 @@ class DocumentImporter
      * Più documenti dello stesso tipo per lo stesso fornitore sono aggiornamenti:
      * i più vecchi vengono eliminati (soft delete) alla data di emissione del successivo.
      */
-    private function supersedeOlderVersions(string $fornitoreId, int $documentTypeId): void
+    private function supersedeOlderVersions(string $documentableType, string $documentableId, int $documentTypeId): void
     {
         $versions = Document::where('source_app', 'sharepoint')
-            ->where('documentable_type', 'fornitore')
-            ->where('documentable_id', $fornitoreId)
+            ->where('documentable_type', $documentableType)
+            ->where('documentable_id', $documentableId)
             ->where('document_type_id', $documentTypeId)
             ->whereNotNull('emitted_at')
             ->orderBy('emitted_at')
@@ -124,13 +132,20 @@ class DocumentImporter
         }
     }
 
+    private function matchSubject(string $folderName, string $subjectType): SubjectMatch
+    {
+        return $subjectType === 'employee'
+            ? $this->employeeMatcher->match($folderName)
+            : SubjectMatch::fromFornitore($this->matcher->match($folderName));
+    }
+
     /** @return array<string, mixed> */
-    private function attributes(SharePointFile $file, FornitoreMatch $match, Classification $c): array
+    private function attributes(SharePointFile $file, SubjectMatch $match, Classification $c): array
     {
         return [
-            'company_id' => $match->fornitore->company_id,
-            'documentable_type' => 'fornitore',
-            'documentable_id' => $match->fornitore->id,
+            'company_id' => $match->subject->company_id,
+            'documentable_type' => $match->documentableType,
+            'documentable_id' => $match->subject->id,
             'document_type_id' => $c->documentTypeId,
             'name' => $file->name,
             // document_url è varchar(255): l'URL completo resta sempre in metadata.web_url.
@@ -154,13 +169,13 @@ class DocumentImporter
     }
 
     /** @return array<string, mixed> */
-    private function row(SharePointFile $file, ?string $collaborator, ?FornitoreMatch $match, string $kind, ?Classification $c, string $action, ?string $error = null): array
+    private function row(SharePointFile $file, ?string $collaborator, ?SubjectMatch $match, string $kind, ?Classification $c, string $action, ?string $error = null): array
     {
         return [
             'path' => $file->path,
             'collaborator' => $collaborator,
-            'fornitore_id' => $match?->fornitore?->id,
-            'fornitore' => $match?->fornitore?->nome,
+            'fornitore_id' => $match?->subject?->id,
+            'fornitore' => $match?->label,
             'match' => $kind,
             'document_type_id' => $c?->documentTypeId,
             'confidence' => $c?->confidence,

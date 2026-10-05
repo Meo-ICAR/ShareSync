@@ -18,7 +18,18 @@ class SharePointDocumentTypesSeeder extends Seeder
     public function run(): void
     {
         $regexById = [
-            35 => '/tessera.*sanitaria|codice.*fiscale/i',
+            1 => '/casel|carichi.*pendenti/i',
+            3 => '/dichiarazione.*sostitutiva.*certificato.*onorabilit|dich\w*[\s._]+(sos|sot)/i',
+            5 => null,
+            6 => '/12\s*ore/i',
+            7 => '/15\s*ore/i',
+            8 => '/(30|45)\s*ore\s*oam|oam\s*(30|45)\s*ore/i',
+            9 => '/60\s*(ore|h)/i',
+            10 => '/(30|45)\s*ore\s*ivass|ivass\s*(30|45)\s*ore/i',
+            27 => '/carta.*identit|c\.i\.|identit|documenti.*personali|residenza/i',
+            35 => '/^(?!.*identit).*(tessera.*sanitaria|codice.*fiscale)/i',
+            48 => '/attestato.*formazione.*oam/i',
+            57 => '/^(?!.*12\s*ore).*(esito.*prova|prova.*esito|prova.*valut|prov\.?\s*valut|super\w*\.?.*prova)/i',
             36 => '/p\.?\s?iva|partita.*iva|attribuzione.*iva|ateco/i',
             37 => '/visura/i',
             38 => '/curriculum|\bcv\b/i',
@@ -42,7 +53,7 @@ class SharePointDocumentTypesSeeder extends Seeder
             ['code' => 'RICONOSCIMENTO_PREMIO', 'name' => 'Riconoscimento premio', 'regex' => '/riconoscimento.*premio|welcome.?bonus/i'],
             ['code' => 'ENASARCO', 'name' => 'Enasarco', 'regex' => '/enasarco/i'],
             ['code' => 'RECESSO_RISOLUZIONE', 'name' => 'Recesso / Risoluzione contrattuale', 'regex' => '/recesso|risoluzione/i'],
-            ['code' => 'ESITO_PROVA_OAM', 'name' => 'Esito prova valutativa OAM', 'regex' => '/esito.*prova|prova.*esito/i'],
+            ['code' => 'ESITO_PROVA_OAM', 'name' => 'Esito prova valutativa OAM', 'regex' => '/^(?!.*12\s*ore).*(esito.*prova|prova.*esito|prova.*valut|prov\.?\s*valut|super\w*\.?.*prova)/i'],
             ['code' => 'DIFENSIVA_LEGALE', 'name' => 'Difensiva / Studio legale', 'regex' => '/difensiv|studio.*legale|avv\./i'],
         ];
 

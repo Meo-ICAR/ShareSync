@@ -48,7 +48,7 @@ class SharePointClient
     public function children(string $itemId): array
     {
         $url = "https://graph.microsoft.com/v1.0/drives/{$this->driveId}/items/{$itemId}/children"
-            .'?$select=id,name,folder,file,size,eTag,webUrl&$top=200';
+            .'?$select=id,name,folder,file,size,eTag,webUrl,lastModifiedDateTime&$top=200';
         $items = [];
 
         while ($url) {
