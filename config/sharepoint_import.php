@@ -2,6 +2,7 @@
 
 return [
     'root' => '1 - COLLABORATORI ATTIVI',
+    'employee_root' => '4 - DIPENDENTI RACES ISCRITTI IN OAM',
     'default_min_confidence' => 55,
     'rule_confidence' => 90,
     'fuzzy_threshold' => 85,

@@ -10,19 +10,21 @@ class ImportSharePointDocuments extends Command
 {
     protected $signature = 'sharepoint:import-documents
                             {--root= : Cartella radice su SharePoint (default da config)}
+                            {--employees : Importa i documenti dei dipendenti (Employee) dalla cartella employee_root}
                             {--commit : Scrive i record su documents (altrimenti dry-run)}';
 
     protected $description = 'Classifica i file dei collaboratori su SharePoint e li importa in documents';
 
     public function handle(DocumentImporter $importer): int
     {
-        $root = $this->option('root') ?: config('sharepoint_import.root');
+        $subjectType = $this->option('employees') ? 'employee' : 'fornitore';
+        $root = $this->option('root') ?: config($subjectType === 'employee' ? 'sharepoint_import.employee_root' : 'sharepoint_import.root');
         $commit = (bool) $this->option('commit');
 
         $this->info(($commit ? 'IMPORT' : 'DRY-RUN')." da \"{$root}\"");
 
         try {
-            $rows = $importer->run($root, $commit);
+            $rows = $importer->run($root, $commit, $subjectType);
         } catch (RuntimeException $e) {
             $this->error($e->getMessage());
 

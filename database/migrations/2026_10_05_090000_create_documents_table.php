@@ -28,6 +28,8 @@ return new class extends Migration
             $table->string('app_id')->nullable();
             $table->string('app_drive_id')->nullable();
             $table->string('app_etag')->nullable();
+            $table->date('emitted_at')->nullable();
+            $table->date('expires_at')->nullable();
             $table->json('metadata')->nullable();
             $table->unsignedTinyInteger('ai_confidence_score')->nullable();
             $table->string('spatie_collection', 100)->default('default');

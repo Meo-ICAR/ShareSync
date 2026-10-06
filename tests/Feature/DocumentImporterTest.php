@@ -19,6 +19,8 @@ class DocumentImporterTest extends TestCase
 
     private string $f1Url = 'u1';
 
+    private string $f1Modified = '2026-03-10T08:00:00Z';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -31,7 +33,7 @@ class DocumentImporterTest extends TestCase
         DocumentType::unguarded(function () {
             DocumentType::create(['id' => 1, 'name' => 'Casellario Giudiziale', 'regex' => '/casellario|giudiz/i']);
             DocumentType::create(['id' => 2, 'name' => 'Carichi Pendenti', 'regex' => '/carichi.*pendenti/i']);
-            DocumentType::create(['id' => 3, 'name' => 'Visura Camerale', 'regex' => '/visura/i']);
+            DocumentType::create(['id' => 3, 'name' => 'Visura Camerale', 'regex' => '/visura/i', 'is_monitored' => true, 'duration' => 6, 'duration_unit' => 'months']);
         });
 
         $this->fornitore = Fornitori::unguarded(fn () => Fornitori::create([
@@ -61,7 +63,7 @@ class DocumentImporterTest extends TestCase
                 ['id' => 'loose', 'name' => 'readme.pdf', 'file' => [], 'size' => 1, 'eTag' => 'e0', 'webUrl' => 'u0'],
             ]]),
             'graph.microsoft.com/v1.0/drives/D/items/c1/children*' => fn () => Http::response(['value' => [
-                ['id' => 'f1', 'name' => 'Visura Camerale 2026.pdf', 'file' => [], 'size' => 10, 'eTag' => 'e1', 'webUrl' => $this->f1Url],
+                ['id' => 'f1', 'name' => 'Visura Camerale 2026.pdf', 'file' => [], 'size' => 10, 'eTag' => 'e1', 'webUrl' => $this->f1Url, 'lastModifiedDateTime' => $this->f1Modified],
                 ['id' => 'f2', 'name' => 'Casellar. Giudiz. e Carichi pendenti.pdf', 'file' => [], 'size' => 20, 'eTag' => 'e2', 'webUrl' => 'u2'],
             ]]),
             'graph.microsoft.com/v1.0/drives/D/items/c2/children*' => Http::response(['value' => [
@@ -206,6 +208,48 @@ class DocumentImporterTest extends TestCase
         $this->assertFalse(Document::where('app_id', 'f1')->exists());
         $this->assertStringContainsString('boom', $errors[0]['error']);
         $this->assertSame(2, Document::where('app_id', 'f2')->count());
+    }
+
+    public function test_emitted_at_is_file_date_and_expires_at_follows_document_type_duration(): void
+    {
+        $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+
+        $visura = Document::where('app_id', 'f1')->first();
+        $this->assertSame('2026-03-10', $visura->emitted_at->toDateString());
+        $this->assertSame('2026-09-10', $visura->expires_at->toDateString());
+
+        $casellario = Document::where('app_id', 'f2')->where('document_type_id', 1)->first();
+        $this->assertNull($casellario->expires_at);
+    }
+
+    public function test_older_documents_of_same_type_are_soft_deleted_at_next_emission_date(): void
+    {
+        $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+        $this->assertSame(0, Document::onlyTrashed()->count());
+
+        $this->f1Modified = '2026-06-01T08:00:00Z';
+        $this->app->instance(AiClassifier::class, new class implements AiClassifier
+        {
+            public function classify(string $path, array $candidates): array
+            {
+                return [['document_type_id' => 3, 'confidence' => 95]];
+            }
+        });
+        Document::unguarded(fn () => Document::create([
+            'documentable_type' => 'fornitore',
+            'documentable_id' => $this->fornitore->id,
+            'document_type_id' => 3,
+            'name' => 'Visura nuova.pdf',
+            'source_app' => 'sharepoint',
+            'app_id' => 'newer',
+            'emitted_at' => '2026-05-01',
+        ]));
+
+        $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+
+        $old = Document::withTrashed()->where('app_id', 'f1')->first();
+        $this->assertSame('2026-05-01', $old->deleted_at->toDateString());
+        $this->assertNull(Document::where('app_id', 'newer')->first()->deleted_at);
     }
 
     public function test_missing_root_folder_throws(): void
