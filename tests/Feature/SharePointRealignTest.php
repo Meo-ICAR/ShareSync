@@ -18,20 +18,21 @@ class SharePointRealignTest extends TestCase
         Artisan::shouldReceive('call')->once()->ordered()->with('sharepoint:import-documents', ['--employees' => true, '--commit' => true])->andReturn(0);
         Artisan::shouldReceive('call')->once()->ordered()->with('sharepoint:link-raccolte', ['--commit' => true, '--classify' => true])->andReturn(0);
         Artisan::shouldReceive('call')->once()->ordered()->with('sharepoint:backfill-emission-dates', ['--commit' => true])->andReturn(0);
-        Artisan::shouldReceive('output')->times(4)->andReturn('ok');
+        Artisan::shouldReceive('call')->once()->ordered()->with('sharepoint:supersede-versions', ['--commit' => true])->andReturn(0);
+        Artisan::shouldReceive('output')->times(5)->andReturn('ok');
 
         $results = app(SharePointRealigner::class)->run(commit: true, classify: true);
 
         $this->assertSame(
-            ['import fornitori', 'import dipendenti', 'collegamento raccolte', 'allineamento date, scadenze e versioni'],
+            ['import fornitori', 'import dipendenti', 'collegamento raccolte', 'allineamento date, scadenze e versioni', 'versioning dipendenti e fornitori'],
             array_column($results, 'step'),
         );
     }
 
     public function test_dry_run_does_not_pass_the_commit_option(): void
     {
-        Artisan::shouldReceive('call')->times(4)->withArgs(fn (string $command, array $options): bool => ! array_key_exists('--commit', $options))->andReturn(0);
-        Artisan::shouldReceive('output')->times(4)->andReturn('');
+        Artisan::shouldReceive('call')->times(5)->withArgs(fn (string $command, array $options): bool => ! array_key_exists('--commit', $options))->andReturn(0);
+        Artisan::shouldReceive('output')->times(5)->andReturn('');
 
         app(SharePointRealigner::class)->run(commit: false);
     }
@@ -39,12 +40,12 @@ class SharePointRealignTest extends TestCase
     public function test_a_failing_step_does_not_stop_the_following_ones(): void
     {
         Artisan::shouldReceive('call')->once()->with('sharepoint:import-documents', ['--commit' => true])->andThrow(new RuntimeException('Cartella radice non trovata'));
-        Artisan::shouldReceive('call')->times(3)->andReturn(0);
-        Artisan::shouldReceive('output')->times(3)->andReturn('ok');
+        Artisan::shouldReceive('call')->times(4)->andReturn(0);
+        Artisan::shouldReceive('output')->times(4)->andReturn('ok');
 
         $results = app(SharePointRealigner::class)->run(commit: true);
 
-        $this->assertSame([1, 0, 0, 0], array_column($results, 'exit_code'));
+        $this->assertSame([1, 0, 0, 0, 0], array_column($results, 'exit_code'));
         $this->assertSame('Cartella radice non trovata', $results[0]['output']);
     }
 

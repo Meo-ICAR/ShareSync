@@ -32,4 +32,32 @@ class DocumentVersioner
 
         return $older->count();
     }
+
+    /**
+     * Applica il versioning a tutti i gruppi (soggetto, tipo) con più versioni, per i soggetti indicati.
+     *
+     * @param  list<string>  $documentableTypes  Alias morph dei soggetti (es. employee, fornitore)
+     * @return int Versioni sostituite (con $commit false: quelle che verrebbero sostituite)
+     */
+    public function supersedeAll(array $documentableTypes, bool $commit = true): int
+    {
+        $groups = Document::where('source_app', 'sharepoint')
+            ->whereIn('documentable_type', $documentableTypes)
+            ->whereNotNull('document_type_id')
+            ->whereNotNull('emitted_at')
+            ->selectRaw('documentable_type, documentable_id, document_type_id, count(*) as versions')
+            ->groupBy('documentable_type', 'documentable_id', 'document_type_id')
+            ->havingRaw('count(*) > 1')
+            ->get();
+
+        $superseded = 0;
+
+        foreach ($groups as $group) {
+            $superseded += $commit
+                ? $this->supersedeOlderVersions((string) $group->documentable_type, (string) $group->documentable_id, (int) $group->document_type_id)
+                : (int) $group->versions - 1;
+        }
+
+        return $superseded;
+    }
 }

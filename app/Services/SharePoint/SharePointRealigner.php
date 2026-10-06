@@ -24,6 +24,7 @@ class SharePointRealigner
             'import dipendenti' => ['sharepoint:import-documents', ['--employees' => true] + $commitOption],
             'collegamento raccolte' => ['sharepoint:link-raccolte', $commitOption + ($classify ? ['--classify' => true] : [])],
             'allineamento date, scadenze e versioni' => ['sharepoint:backfill-emission-dates', $commitOption],
+            'versioning dipendenti e fornitori' => ['sharepoint:supersede-versions', $commitOption],
         ];
 
         $results = [];
