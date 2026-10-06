@@ -2,7 +2,11 @@
 
 namespace App\Services\SharePoint;
 
+use App\Models\Client;
+use App\Models\Clienti;
 use App\Models\DocumentType;
+use App\Models\Employee;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -153,9 +157,7 @@ class RaccolteLinker
     /** @return list<array{id: string, name: string, key: string}> */
     private function entities(string $type): array
     {
-        $table = ['clienti' => 'clientis', 'client' => 'clients', 'employee' => 'employees'][$type];
-
-        return $this->entities[$type] ??= DB::table($table)
+        return $this->entities[$type] ??= $this->table($type)
             // Anche le anagrafiche soft-deleted (es. CASHME) restano collegabili.
             ->orderBy('name')
             ->get(['id', 'name'])
@@ -165,9 +167,21 @@ class RaccolteLinker
             ->all();
     }
 
+    /** Query builder sulla connessione e tabella del model: le anagrafiche non stanno tutte nel database di default. */
+    private function table(string $type): Builder
+    {
+        $model = new ([
+            'clienti' => Clienti::class,
+            'client' => Client::class,
+            'employee' => Employee::class,
+        ][$type]);
+
+        return DB::connection($model->getConnectionName())->table($model->getTable());
+    }
+
     /** Unica company dell'installazione (gli impiegati ne portano l'id). */
     private function companyId(): ?string
     {
-        return $this->companyId ??= DB::table('employees')->whereNotNull('company_id')->value('company_id');
+        return $this->companyId ??= $this->table('employee')->whereNotNull('company_id')->value('company_id');
     }
 }
