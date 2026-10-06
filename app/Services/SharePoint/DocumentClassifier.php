@@ -23,11 +23,11 @@ class DocumentClassifier
     }
 
     /** @return list<Classification> */
-    public function classify(string $relativePath): array
+    public function classify(string $relativePath, bool $useFolderHints = true): array
     {
         $segments = explode('/', $relativePath);
         $fileName = pathinfo((string) end($segments), PATHINFO_FILENAME);
-        $folderNo = count($segments) >= 3 && preg_match('/^(\d+)\s*-/', $segments[1], $m) ? (int) $m[1] : null;
+        $folderNo = $useFolderHints && count($segments) >= 3 && preg_match('/^(\d+)\s*-/', $segments[1], $m) ? (int) $m[1] : null;
 
         // Le regex valgono su tutti i tipi; l'hint di cartella restringe solo i candidati dell'AI.
         $hits = $this->types()->filter(fn ($t) => $this->matches($t->regex, $fileName))->values();

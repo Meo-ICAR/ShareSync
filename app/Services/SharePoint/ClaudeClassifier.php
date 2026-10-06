@@ -11,7 +11,7 @@ class ClaudeClassifier implements AiClassifier
         $list = collect($candidates)->map(fn ($c) => "{$c['id']}: {$c['name']}")->implode("\n");
 
         $prompt = <<<PROMPT
-        Sei un assistente che classifica documenti aziendali di collaboratori (agenti) a partire dal percorso del file.
+        Sei un assistente che classifica documenti aziendali (collaboratori, fornitori, istituti, documenti societari) a partire dal percorso del file.
 
         Percorso file: {$path}
 

@@ -20,7 +20,7 @@ class SharePointDocumentTypesSeeder extends Seeder
         $regexById = [
             35 => '/tessera.*sanitaria|codice.*fiscale/i',
             36 => '/p\.?\s?iva|partita.*iva|attribuzione.*iva|ateco/i',
-            37 => '/visura/i',
+            37 => '/visura|visuord/i',
             38 => '/curriculum|\bcv\b/i',
             39 => '/liberatoria/i',
             40 => '/tassa.*ivass|ivass.*168/i',
