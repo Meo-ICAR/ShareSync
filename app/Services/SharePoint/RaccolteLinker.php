@@ -2,6 +2,7 @@
 
 namespace App\Services\SharePoint;
 
+use App\Models\DocumentType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -13,6 +14,9 @@ class RaccolteLinker
     private array $entities = [];
 
     private ?string $companyId = null;
+
+    /** @var array<string, int|null> */
+    private array $typeIds = [];
 
     /**
      * Anagrafica a cui abbinare il file, o null se non riconosciuta.
@@ -30,6 +34,26 @@ class RaccolteLinker
             'societari' => $this->societari($segments),
             default => null,
         };
+    }
+
+    /** Tipo dedotto da cartella e nome file con config('sharepoint_import.link_type_rules'). */
+    public function typeFor(string $path): ?int
+    {
+        foreach (config('sharepoint_import.link_type_rules') as [$pattern, $target]) {
+            if (preg_match($pattern, $path) === 1) {
+                return $this->typeId($target);
+            }
+        }
+
+        return null;
+    }
+
+    private function typeId(string $codeOrName): ?int
+    {
+        $this->typeIds ??= [];
+
+        return $this->typeIds[$codeOrName] ??= DocumentType::where('code', $codeOrName)->value('id')
+            ?? DocumentType::where('name', $codeOrName)->orderBy('id')->value('id');
     }
 
     public function isVarieIstituti(string $fileName): bool
@@ -79,6 +103,15 @@ class RaccolteLinker
 
         if ($at !== false) {
             return $this->byName('employee', (string) ($segments[$at + 1] ?? ''));
+        }
+
+        // Una cartella che porta il nome esatto di un employee (es. "Faraone Vincenzo") appartiene a lui.
+        $employees = array_column($this->entities('employee'), null, 'key');
+        foreach (array_slice($segments, 0, -1) as $segment) {
+            $employee = $employees[$this->normalize((string) preg_replace('/\s*-\s*documenti personali$/i', '', $segment))] ?? null;
+            if ($employee !== null) {
+                return ['type' => 'employee', 'id' => $employee['id'], 'label' => $employee['name'], 'company_id' => $this->companyId()];
+            }
         }
 
         return $this->company();

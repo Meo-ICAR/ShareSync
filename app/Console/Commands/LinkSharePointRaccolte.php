@@ -38,8 +38,11 @@ class LinkSharePointRaccolte extends Command
         }
 
         $types = DocumentType::all();
-        $varieId = DocumentType::where('code', 'VARIE_ISTITUTI')->value('id');
+        $varieIstitutiId = DocumentType::where('code', 'VARIE_ISTITUTI')->value('id');
         $daClassificareId = DocumentType::where('code', 'DA_CLASSIFICARE')->value('id');
+        $varieId = DocumentType::where('code', 'VARIE')->value('id');
+        // Documenti già collegati e ancora "Da classificare": ricevono il tipo se ora è deducibile.
+        $pending = Document::where('source_app', 'sharepoint')->where('document_type_id', $daClassificareId)->pluck('app_id', 'app_id')->all();
         $rows = [];
         $summary = [];
 
@@ -54,18 +57,21 @@ class LinkSharePointRaccolte extends Command
             $untyped = array_column($scanner->unmatched($files, $types), 'path');
             $counts = [];
 
-            foreach ($files->filter(fn ($f) => in_array($f->path, $untyped, true)) as $file) {
+            foreach ($files->filter(fn ($f) => in_array($f->path, $untyped, true) || isset($pending[$f->id])) as $file) {
                 $target = $linker->target($raccolta['raccolta'], $file->path);
                 $typeId = null;
                 $confidence = null;
                 if ($target !== null && $linker->isVarieIstituti($file->name)) {
-                    $typeId = $varieId;
+                    $typeId = $varieIstitutiId;
+                } elseif ($target !== null && ($typeId = $linker->typeFor($file->path)) !== null) {
+                    // tipo dedotto dal percorso
                 } elseif ($target !== null && $this->option('classify')) {
                     $c = $classifier->withTypes($types)->classify($file->path, false)[0];
                     [$typeId, $confidence] = [$c->documentTypeId, $c->confidence];
                 }
-                $typeId ??= $target !== null ? $daClassificareId : null;
-                $action = $target === null ? 'no_match' : ($commit ? $this->store($file, $raccolta['drive_id'], $raccolta['raccolta'], $target, $typeId, $confidence) : 'dry_run');
+                // Istituti: ciò che resta senza tipo è "Varie"; altrove "Da classificare".
+                $typeId ??= $target === null ? null : ($target['type'] === 'clienti' ? $varieId : $daClassificareId);
+                $action = $target === null ? 'no_match' : ($commit ? $this->store($file, $raccolta['drive_id'], $raccolta['raccolta'], $target, $typeId, $confidence, $daClassificareId) : 'dry_run');
                 $counts[$action] = ($counts[$action] ?? 0) + 1;
                 $rows[] = [$raccolta['raccolta'], $file->path, $target['type'] ?? null, $target['label'] ?? null, $typeId ? $types->firstWhere('id', $typeId)?->name : null, $confidence, $action];
             }
@@ -88,16 +94,29 @@ class LinkSharePointRaccolte extends Command
     }
 
     /** @param array{type: string, id: string, label: string, company_id: ?string} $target */
-    private function store(SharePointFile $file, string $driveId, string $raccolta, array $target, ?int $typeId, ?int $confidence): string
+    private function store(SharePointFile $file, string $driveId, string $raccolta, array $target, ?int $typeId, ?int $confidence, ?int $daClassificareId): string
     {
-        $exists = Document::withTrashed()
+        $existing = Document::withTrashed()
             ->where('source_app', 'sharepoint')
             ->where('app_id', $file->id)
-            ->where('documentable_type', $target['type'])
-            ->exists();
+            ->first();
 
-        if ($exists) {
-            return 'exists';
+        if ($existing !== null) {
+            // Il file è stato riassegnato a un'altra anagrafica (es. da company a employee).
+            if ($existing->documentable_type !== $target['type'] || (string) $existing->documentable_id !== $target['id']) {
+                $existing->update(['documentable_type' => $target['type'], 'documentable_id' => $target['id'], 'company_id' => $target['company_id']]);
+                $existing->refresh();
+                $moved = true;
+            }
+
+            // Un documento rimasto "Da classificare" riceve il tipo se ora è deducibile.
+            if ($typeId !== null && $typeId !== $daClassificareId && $existing->document_type_id === $daClassificareId) {
+                $existing->update(['document_type_id' => $typeId, 'ai_confidence_score' => $confidence]);
+
+                return 'updated';
+            }
+
+            return ($moved ?? false) ? 'updated' : 'exists';
         }
 
         Document::create([

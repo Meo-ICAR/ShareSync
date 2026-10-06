@@ -44,4 +44,40 @@ return [
 
     // File con questo nome esatto, sotto un istituto, prendono il tipo "Varie istituti".
     'link_varie_istituti' => ['vivibanca.pdf'],
+
+    // sharepoint:link-raccolte: tipo dedotto dal percorso (cartella + nome). Si applica la prima regola che
+    // corrisponde; il target è il `code` di un DocumentType o, in mancanza, il suo `name`.
+    'link_type_rules' => [
+        ['/30 ore oam/i', 'Formazione 30h aggiornamento OAM'],
+        ['/12 ore oam/i', 'Attestato formazione OAM 12h'],
+        ['/30 ore ivass/i', 'Formazione 30h aggiornamento IVASS'],
+        ['/documenti personali/i', 'DOCUMENTO_IDENTIFICATIVO'],
+        ['/\btari\b/i', 'TARI'],
+        ['/consulenza|procacciamento/i', 'CONTRATTO_CONSULENZA'],
+        ['/verbali? cda/i', 'VERBALE_CDA'],
+        ['/verbal\w* (di )?assemblea|assemblea soci/i', 'VERBALE_ASSEMBLEA'],
+        ['/atto costitutivo|statuto|cessione quot|patto parasociale|atti notarili/i', 'ATTO_SOCIETARIO'],
+        ['/visura camerale|certif\. cciaa/i', 'Visura camerale'],
+        ['/polizza|questionario rinnovo/i', 'Polizza RC Professionale'],
+        ['/enasarco/i', 'ENASARCO'],
+        ['/contributo annuale oam|oam - (pagamento|versamento)/i', 'CONTRIBUTO_OAM'],
+        ['/ispezione gdf|verbale ispettiv/i', 'ISPEZIONE_GDF'],
+        ['/cont[oi] corrent[ei]|dati e documenti bancari|fidejussione|\bfido\b/i', 'CONTO_CORRENTE_FIDO'],
+        ['/relazione.*compliance|relazione attivit/i', 'RELAZIONE_COMPLIANCE'],
+        ['/istanza di iscrizione|corecom/i', 'ISTANZA_AUTORIZZATIVA'],
+        ['/carta intestata/i', 'IMMAGINE_COORDINATA'],
+        ['/mappatura/i', 'LISTA_COLLABORATORI'],
+        ['/dichiaraz.*requis.*onorab/i', 'Dichiarazione sostitutiva certificato onorabilità'],
+        ['/schede? prodotto|fascicoli informativi/i', 'SCHEDA_PRODOTTO'],
+        ['/reclam/i', 'Gestione Reclami'],
+        ['/policy banche/i', 'POLICY_LISTINO'],
+        ['/credenziali|utenze/i', 'ATTIVAZIONE_UTENZE'],
+        ['/nomina|designazione responsabile/i', 'Nomina Responsabile'],
+        ['/allegato economico|compenso di mediazione|allegato d corrispettivi/i', 'ALLEGATO_PROVVIGIONALE'],
+        ['/remunerazione|premio (correttezza|qualit)|extra\s?provv|modific\w* (provvigioni|tassi|condizioni|fasce|listini)|mod (tassi|provv|listini)|variazione condizioni|tabella tassi|monitoraggio qualit/i', 'CONDIZIONI_ECONOMICHE'],
+        ['/codice di comportamento|codice collocamento/i', 'CODICE_COLLOCAMENTO'],
+        ['/requisiti di onorabilit/i', 'Casellario Giudiziale & Carichi pendenti'],
+        ['/contratti (attivi|cessati)/i', 'CONTRATTO_FORNITORE'],
+        ['/convenzion|accordo|contratto|licenza|incarico|risoluzione/i', 'CONVENZIONE_MEDIAZIONE'],
+    ],
 ];
