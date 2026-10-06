@@ -74,6 +74,8 @@ class RaccolteDocumentTypesSeeder extends Seeder
             ['CONTO_CORRENTE_FIDO', 'Conti correnti e affidamenti', '/fidejussione|\\bfido\\b|conto corrente|banca multicanale/i', $company],
             ['RELAZIONE_COMPLIANCE', 'Relazione funzione compliance', '/relazione.*compliance|relazione attivit/i', $company],
             ['ISTANZA_AUTORIZZATIVA', 'Istanza di iscrizione / autorizzazione', '/istanza.*iscrizione|corecom/i', $company],
+            ['FORMAZIONE_ANTIRICICLAGGIO', 'Formazione antiriciclaggio', '/antiriciclaggio/i', ['is_person' => true, 'training_organization' => 'interna']],
+            ['FORMAZIONE_PRIVACY', 'Formazione privacy', '/ore? privacy/i', ['is_person' => true, 'training_organization' => 'PRIVACY']],
             ['DOCUMENTO_IDENTIFICATIVO', 'Documento identificativo', '/documenti? (personali|identit)/i', ['is_person' => true]],
             ['TARI', 'TARI / tassa rifiuti', '/\\btari\\b/i', $company],
             ['CONTRATTO_CONSULENZA', 'Contratto consulenza', '/consulenza|procacciamento/i', $company],

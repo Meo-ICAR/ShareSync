@@ -52,6 +52,8 @@ return [
         ['/30 ore oam/i', 'Formazione 30h aggiornamento OAM'],
         ['/12 ore oam/i', 'Attestato formazione OAM 12h'],
         ['/30 ore ivass/i', 'Formazione 30h aggiornamento IVASS'],
+        ['/\bore? privacy/i', 'FORMAZIONE_PRIVACY'],
+        ['/\bore? antiriciclaggio|antiriciclaggio - trasparenza - privacy/i', 'FORMAZIONE_ANTIRICICLAGGIO'],
         ['/documenti personali/i', 'DOCUMENTO_IDENTIFICATIVO'],
         ['/\btari\b/i', 'TARI'],
         ['/consulenza|procacciamento/i', 'CONTRATTO_CONSULENZA'],
