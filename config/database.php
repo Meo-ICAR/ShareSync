@@ -64,6 +64,48 @@ return [
             ]) : [],
         ],
 
+        // Database di UnicoOAM: da qui leggono e scrivono Document e DocumentType.
+        'mysql_unicooam' => [
+            'driver' => 'mysql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_UNICOOAM', 'unicooam'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        // Database proforma: da qui leggono Fornitori, Clienti e Client.
+        'mysql_proforma' => [
+            'driver' => 'mysql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_PROFORMA', 'proforma'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

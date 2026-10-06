@@ -15,7 +15,7 @@ class DocumentType extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia, SoftDeletes;
 
-   // protected $connection = 'mysql';
+    protected $connection = 'mysql_unicooam';
 
     protected $orderBy = 'name';
 

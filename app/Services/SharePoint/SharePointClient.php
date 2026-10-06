@@ -44,6 +44,25 @@ class SharePointClient
         return $this->token = (string) $response->json('access_token');
     }
 
+    /** Data di ultima modifica di un file del drive; null se l'elemento non esiste più. */
+    public function lastModified(string $itemId): ?Carbon
+    {
+        $response = Http::withToken($this->token())
+            ->get("https://graph.microsoft.com/v1.0/drives/{$this->driveId}/items/{$itemId}".'?$select=id,lastModifiedDateTime');
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException("Errore lettura elemento {$itemId} (HTTP {$response->status()})");
+        }
+
+        $modified = $response->json('lastModifiedDateTime');
+
+        return $modified !== null ? Carbon::parse($modified) : null;
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function children(string $itemId): array
     {

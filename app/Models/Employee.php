@@ -15,7 +15,7 @@ class Employee extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $connection = 'mysql';
+    protected $connection = 'mysql_unicooam';
 
     protected $orderBy = 'name';
 

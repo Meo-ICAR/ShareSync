@@ -17,7 +17,7 @@ class Client extends Model
      */
     protected $connection = 'mysql_proforma';
 
-    protected $table = 'proforma.clients';
+    protected $table = 'clients';
 
     protected $fillable = [
         'company_id',

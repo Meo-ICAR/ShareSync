@@ -39,7 +39,7 @@ class Clienti extends Model
      *
      * @var string
      */
-    // protected $connection = 'mysql_proforma';
+    protected $connection = 'mysql_proforma';
 
     protected $table = 'clientis';
 

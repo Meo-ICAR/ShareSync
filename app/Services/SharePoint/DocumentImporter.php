@@ -15,6 +15,7 @@ class DocumentImporter
         private readonly FornitoreMatcher $matcher,
         private readonly EmployeeMatcher $employeeMatcher,
         private readonly DocumentClassifier $classifier,
+        private readonly DocumentVersioner $versioner,
     ) {}
 
     /** @return list<array<string, mixed>> */
@@ -61,7 +62,7 @@ class DocumentImporter
         }
 
         foreach ($touched as [$documentableType, $documentableId, $documentTypeId]) {
-            $this->supersedeOlderVersions($documentableType, $documentableId, $documentTypeId);
+            $this->versioner->supersedeOlderVersions($documentableType, $documentableId, $documentTypeId);
         }
 
         return $rows;
@@ -109,27 +110,6 @@ class DocumentImporter
         Document::create($attributes);
 
         return 'created';
-    }
-
-    /**
-     * Più documenti dello stesso tipo per lo stesso fornitore sono aggiornamenti:
-     * i più vecchi vengono eliminati (soft delete) alla data di emissione del successivo.
-     */
-    private function supersedeOlderVersions(string $documentableType, string $documentableId, int $documentTypeId): void
-    {
-        $versions = Document::where('source_app', 'sharepoint')
-            ->where('documentable_type', $documentableType)
-            ->where('documentable_id', $documentableId)
-            ->where('document_type_id', $documentTypeId)
-            ->whereNotNull('emitted_at')
-            ->orderBy('emitted_at')
-            ->orderBy('created_at')
-            ->get();
-
-        foreach ($versions->slice(0, -1)->values() as $index => $older) {
-            $older->deleted_at = $versions[$index + 1]->emitted_at;
-            $older->save();
-        }
     }
 
     private function matchSubject(string $folderName, string $subjectType): SubjectMatch

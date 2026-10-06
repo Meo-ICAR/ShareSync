@@ -133,6 +133,7 @@ class LinkSharePointRaccolte extends Command
             'app_id' => $file->id,
             'app_drive_id' => $driveId,
             'app_etag' => $file->etag,
+            'emitted_at' => $file->modifiedAt,
             'metadata' => [
                 'path' => $file->path,
                 'web_url' => $file->webUrl,

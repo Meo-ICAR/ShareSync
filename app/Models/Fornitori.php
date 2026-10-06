@@ -18,6 +18,8 @@ class Fornitori extends Model
      *
      * @var string
      */
+    protected $connection = 'mysql_proforma';
+
     protected $table = 'fornitoris';
 
     /**
