@@ -26,18 +26,18 @@ class ExternalDatabaseConnectionsTest extends TestCase
         $this->assertSame('mysql_unicooam', (new Employee)->getConnectionName());
     }
 
-    public function test_fornitori_uses_the_core_connection(): void
+    public function test_fornitori_and_client_use_the_core_connection(): void
     {
-        $this->assertSame(config('unico-core.connection'), (new Fornitori)->getConnectionName());
-    }
-
-    public function test_clienti_and_client_use_the_proforma_connection(): void
-    {
-        foreach ([Clienti::class, Client::class] as $model) {
-            $this->assertSame('mysql_proforma', (new $model)->getConnectionName(), $model);
+        foreach ([Fornitori::class, Client::class] as $model) {
+            $this->assertSame(config('unico-core.connection'), (new $model)->getConnectionName(), $model);
         }
 
         $this->assertSame('clients', (new Client)->getTable());
+    }
+
+    public function test_clienti_uses_the_proforma_connection(): void
+    {
+        $this->assertSame('mysql_proforma', (new Clienti)->getConnectionName());
     }
 
     public function test_connection_databases_come_from_the_env_names(): void
