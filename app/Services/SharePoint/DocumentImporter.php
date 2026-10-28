@@ -5,6 +5,7 @@ namespace App\Services\SharePoint;
 use App\Models\Document;
 use RuntimeException;
 use Throwable;
+use Unico\Core\Enums\DocumentStatus;
 
 class DocumentImporter
 {
@@ -130,7 +131,7 @@ class DocumentImporter
             'name' => $file->name,
             // document_url è varchar(255): l'URL completo resta sempre in metadata.web_url.
             'document_url' => $file->webUrl !== null && strlen($file->webUrl) <= self::MAX_URL_LENGTH ? $file->webUrl : null,
-            'status' => 'uploaded',
+            'status' => DocumentStatus::UPLOADED->value,
             'sync_status' => 'synced',
             'source_app' => 'sharepoint',
             'app_id' => $file->id,

@@ -10,6 +10,7 @@
         "filament/filament": "^5.9",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
+        "meo-icar/unico-core": "dev-main",
         "pxlrbt/filament-excel": "^4.1",
         "spatie/laravel-medialibrary": "^11.23"
     },
@@ -86,5 +87,13 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": [{
+        "name": "unico-core",
+        "type": "path",
+        "url": "../unico-core",
+        "options": {
+            "symlink": true
+        }
+    }]
 }
