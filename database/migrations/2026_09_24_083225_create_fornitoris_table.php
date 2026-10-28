@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('fornitoris', function (Blueprint $table) {
             $table->comment('Anagrafica Agenti di commercio / Collaboratori (Fornitori di servizi)');
 
-            $table->uuid('id')->primary()->comment('ID univoco del fornitore/agente');
+            $table->id()->comment('ID univoco del fornitore/agente');
+            $table->char('legacy_id', 36)->nullable()->index()->comment('Vecchio uuid');
             $table->string('name')->nullable();
             $table->string('nome')->nullable()->comment('Nome del referente');
             $table->date('stipulated_at')->nullable()->comment('Data stipula contratto collaborazione');
@@ -71,7 +72,7 @@ return new class extends Migration
             $table->string('citta')->nullable();
             $table->softDeletes();
             $table->timestamps();
-            $table->char('company_id', 36)->nullable()->default('5c044917-15b3-4471-90c9-38061fcca754')->index();
+            $table->unsignedBigInteger('company_id')->nullable()->index();
             $table->smallInteger('contributoperiodicita')->nullable()->comment('Frequenza addebito costi (1=Mensile, 3=Trimestrale, etc.)');
             $table->date('contributodalmese')->nullable();
             $table->integer('fornitorirole_id')->nullable()->index();

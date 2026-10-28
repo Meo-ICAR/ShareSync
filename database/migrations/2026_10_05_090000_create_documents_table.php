@@ -9,20 +9,21 @@ return new class extends Migration
     public function up(): void
     {
         // La tabella esiste già nel DB di sviluppo con più colonne: qui si crea
-        // solo il sottoinsieme usato, e solo se manca (es. test su sqlite).
+        // solo il sottoinsieme usato, e solo se manca (es. test): come nel core, id interi e il vecchio uuid in legacy_id.
         if (Schema::hasTable('documents')) {
             return;
         }
 
         Schema::create('documents', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('company_id')->nullable()->index();
+            $table->id();
+            $table->char('legacy_id', 36)->nullable()->index();
+            $table->unsignedBigInteger('company_id')->nullable()->index();
             $table->string('documentable_type');
             $table->string('documentable_id');
             $table->unsignedBigInteger('document_type_id')->nullable()->index();
             $table->string('name')->nullable();
             $table->string('document_url')->nullable();
-            $table->string('status', 50)->default('uploaded');
+            $table->string('status', 50)->default('caricato');
             $table->string('sync_status', 50)->default('local');
             $table->string('source_app')->default('local');
             $table->string('app_id')->nullable();

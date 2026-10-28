@@ -21,12 +21,12 @@ class SupersedeSharePointVersionsTest extends TestCase
     private function document(string $appId, string $emittedAt, string $subjectType = 'fornitore', string $subjectId = 'f1', int $typeId = 3, string $source = 'sharepoint'): Document
     {
         return Document::unguarded(fn () => Document::create([
-            'company_id' => 'c1',
+            'company_id' => 1,
             'documentable_type' => $subjectType,
             'documentable_id' => $subjectId,
             'document_type_id' => $typeId,
             'name' => "{$appId}.pdf",
-            'status' => 'uploaded',
+            'status' => 'caricato',
             'source_app' => $source,
             'app_id' => $appId,
             'emitted_at' => $emittedAt,

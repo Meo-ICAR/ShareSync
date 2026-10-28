@@ -15,9 +15,9 @@ class ExternalDatabaseConnectionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_document_and_document_type_use_the_unicooam_connection(): void
+    public function test_document_uses_the_core_connection_and_document_type_the_unicooam_one(): void
     {
-        $this->assertSame('mysql_unicooam', (new Document)->getConnectionName());
+        $this->assertSame(config('unico-core.connection'), (new Document)->getConnectionName());
         $this->assertSame('mysql_unicooam', (new DocumentType)->getConnectionName());
     }
 
@@ -26,9 +26,14 @@ class ExternalDatabaseConnectionsTest extends TestCase
         $this->assertSame('mysql_unicooam', (new Employee)->getConnectionName());
     }
 
-    public function test_fornitori_clienti_and_client_use_the_proforma_connection(): void
+    public function test_fornitori_uses_the_core_connection(): void
     {
-        foreach ([Fornitori::class, Clienti::class, Client::class] as $model) {
+        $this->assertSame(config('unico-core.connection'), (new Fornitori)->getConnectionName());
+    }
+
+    public function test_clienti_and_client_use_the_proforma_connection(): void
+    {
+        foreach ([Clienti::class, Client::class] as $model) {
             $this->assertSame('mysql_proforma', (new $model)->getConnectionName(), $model);
         }
 
@@ -49,12 +54,12 @@ class ExternalDatabaseConnectionsTest extends TestCase
     {
         DocumentType::unguarded(fn () => DocumentType::create(['id' => 7, 'name' => 'Casellario']));
         $document = Document::unguarded(fn () => Document::create([
-            'company_id' => 'c1',
+            'company_id' => 1,
             'documentable_type' => 'fornitore',
             'documentable_id' => 'f1',
             'document_type_id' => 7,
             'name' => 'x.pdf',
-            'status' => 'uploaded',
+            'status' => 'caricato',
         ]));
 
         $this->assertSame('Casellario', $document->refresh()->documentType->name);

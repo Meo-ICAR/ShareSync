@@ -139,11 +139,6 @@ class Clienti extends Model
         });
     }
 
-    public function documents(): MorphMany
-    {
-        return $this->morphMany(Document::class, 'documentable');
-    }
-
     public function branches(): MorphMany
     {
         return $this->morphMany(Branch::class, 'branchable');

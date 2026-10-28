@@ -17,11 +17,11 @@ class EmissionDateBackfillerTest extends TestCase
     private function document(string $appId, ?string $emittedAt = null, string $source = 'sharepoint'): Document
     {
         return Document::unguarded(fn () => Document::create([
-            'company_id' => 'company-1',
+            'company_id' => 1,
             'documentable_type' => 'fornitore',
             'documentable_id' => 'f-1',
             'name' => "{$appId}.pdf",
-            'status' => 'uploaded',
+            'status' => 'caricato',
             'source_app' => $source,
             'app_id' => $appId,
             'app_drive_id' => 'D',

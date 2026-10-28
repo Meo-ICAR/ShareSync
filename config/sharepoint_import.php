@@ -21,13 +21,9 @@ return [
         6 => null,
     ],
 
-    // sharepoint:link-raccolte: come abbinare i file senza tipo, per raccolta.
-    //   clienti = istituti (tabella clientis); client = tabella clients; societari = company / employee (cartella DIPENDENTI).
+    // sharepoint:link-raccolte: come abbinare i file senza tipo, per raccolta. Gli istituti (clientis) non hanno documenti.
+    //   client = tabella clients; societari = company / employee (cartella DIPENDENTI).
     'link_targets' => [
-        'Istituti Cessione del Quinto' => 'clienti',
-        'Istituti di Credito alle Imprese' => 'clienti',
-        'Accordi di segnalazione' => 'clienti',
-        'Prodotti Assicurativi' => 'clienti',
         'Fornitori' => 'client',
         'Documenti Societari' => 'societari',
     ],

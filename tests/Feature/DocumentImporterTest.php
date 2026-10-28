@@ -38,7 +38,7 @@ class DocumentImporterTest extends TestCase
 
         $this->fornitore = Fornitori::unguarded(fn () => Fornitori::create([
             'nome' => 'ROSSI MARIO',
-            'company_id' => 'company-1',
+            'company_id' => 1,
         ]));
 
         $this->app->instance(AiClassifier::class, new class implements AiClassifier
@@ -96,8 +96,8 @@ class DocumentImporterTest extends TestCase
 
         $doc = Document::where('app_id', 'f1')->first();
         $this->assertSame('fornitore', $doc->documentable_type);
-        $this->assertSame($this->fornitore->id, $doc->documentable_id);
-        $this->assertSame('company-1', $doc->company_id);
+        $this->assertEquals($this->fornitore->id, $doc->documentable_id);
+        $this->assertEquals(1, $doc->company_id);
         $this->assertSame(3, $doc->document_type_id);
         $this->assertSame('sharepoint', $doc->source_app);
         $this->assertSame('synced', $doc->sync_status);

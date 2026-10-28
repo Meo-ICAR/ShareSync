@@ -3,7 +3,6 @@
 namespace App\Services\SharePoint;
 
 use App\Models\Client;
-use App\Models\Clienti;
 use App\Models\DocumentType;
 use App\Models\Employee;
 use Illuminate\Database\Query\Builder;
@@ -23,7 +22,8 @@ class RaccolteLinker
     private array $typeIds = [];
 
     /**
-     * Anagrafica a cui abbinare il file, o null se non riconosciuta.
+     * Anagrafica a cui abbinare il file, o null se non riconosciuta. Gli istituti (Clienti) non hanno documenti: le raccolte
+     * degli istituti non si collegano.
      *
      * @return array{type: string, id: string, label: string, company_id: ?string}|null
      */
@@ -33,7 +33,6 @@ class RaccolteLinker
         $segments = explode('/', $path);
 
         return match ($mode) {
-            'clienti' => $this->byName('clienti', $this->entityFolder($segments)),
             'client' => $this->client((string) preg_replace('/^\d+\s*-\s*/', '', $segments[0])),
             'societari' => $this->societari($segments),
             default => null,
@@ -72,15 +71,6 @@ class RaccolteLinker
         sort($tokens);
 
         return implode(' ', $tokens);
-    }
-
-    /** @param list<string> $segments */
-    private function entityFolder(array $segments): string
-    {
-        // "Accordi Attivi/<istituto>/...": la prima cartella è solo un contenitore.
-        $folder = preg_match('/^accordi\s+(attivi|cessati)$/i', $segments[0]) === 1 ? ($segments[1] ?? '') : $segments[0];
-
-        return (string) $folder;
     }
 
     private function client(string $folder): ?array
@@ -171,7 +161,6 @@ class RaccolteLinker
     private function table(string $type): Builder
     {
         $model = new ([
-            'clienti' => Clienti::class,
             'client' => Client::class,
             'employee' => Employee::class,
         ][$type]);
