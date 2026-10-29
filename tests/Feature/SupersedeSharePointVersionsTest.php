@@ -98,4 +98,35 @@ class SupersedeSharePointVersionsTest extends TestCase
 
         $this->assertSame(1, Document::onlyTrashed()->count());
     }
+
+    public function test_types_of_the_same_family_supersede_each_other(): void
+    {
+        DocumentType::unguarded(fn () => DocumentType::create(['id' => 7, 'name' => 'Formazione 15h aggiornamento OAM ( se IVASS )']));
+        DocumentType::unguarded(fn () => DocumentType::create(['id' => 8, 'name' => 'Formazione 30h aggiornamento OAM']));
+        $fifteen = $this->document('a1', '2024-01-10', typeId: 7);
+        $thirty = $this->document('a2', '2025-03-01', typeId: 8);
+        $unrelated = $this->document('a3', '2025-06-01');
+
+        $this->artisan('sharepoint:supersede-versions')->expectsOutputToContain('DRY-RUN: versioni da sostituire: 1')->assertSuccessful();
+        $this->artisan('sharepoint:supersede-versions', ['--commit' => true])->assertSuccessful();
+
+        $this->assertSame('2025-03-01', $fifteen->refresh()->deleted_at->toDateString());
+        $this->assertNull($thirty->refresh()->deleted_at);
+        $this->assertNull($unrelated->refresh()->deleted_at);
+    }
+
+    public function test_the_same_file_with_several_types_is_not_a_version_of_itself(): void
+    {
+        DocumentType::unguarded(fn () => DocumentType::create(['id' => 7, 'name' => 'Formazione 15h aggiornamento OAM ( se IVASS )']));
+        DocumentType::unguarded(fn () => DocumentType::create(['id' => 48, 'name' => 'Attestato Formazione OAM', 'code' => 'ATTESTATO_FORMAZIONE']));
+        $old = $this->document('a1', '2024-01-10', typeId: 7);
+        $newAsFifteen = $this->document('a2', '2025-03-01', typeId: 7);
+        $newAsAttestato = $this->document('a2', '2025-03-01', typeId: 48);
+
+        $this->artisan('sharepoint:supersede-versions', ['--commit' => true])->assertSuccessful();
+
+        $this->assertSame('2025-03-01', $old->refresh()->deleted_at->toDateString());
+        $this->assertNull($newAsFifteen->refresh()->deleted_at);
+        $this->assertNull($newAsAttestato->refresh()->deleted_at);
+    }
 }

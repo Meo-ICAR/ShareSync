@@ -21,6 +21,12 @@ return [
         6 => null,
     ],
 
+    // Tipi che si aggiornano a vicenda nel versioning (nome o `code`): un attestato di aggiornamento da 30h sostituisce
+    // quello da 15h dello stesso soggetto. Un tipo fuori da queste famiglie si aggiorna solo con se stesso.
+    'version_families' => [
+        ['Formazione 15h aggiornamento OAM ( se IVASS )', 'Formazione 30h aggiornamento OAM', 'ATTESTATO_FORMAZIONE'],
+    ],
+
     // sharepoint:link-raccolte: come abbinare i file senza tipo, per raccolta. Gli istituti (clientis) non hanno documenti.
     //   client = tabella clients; societari = company / employee (cartella DIPENDENTI).
     'link_targets' => [
