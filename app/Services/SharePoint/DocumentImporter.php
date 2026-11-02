@@ -71,12 +71,12 @@ class DocumentImporter
 
     private function store(SharePointFile $file, SubjectMatch $match, Classification $c): string
     {
+        // Senza tipo dedotto il file è già importato se esiste a qualsiasi tipo (anche assegnato dopo): non va duplicato.
         $existing = Document::withTrashed()
             ->where('source_app', 'sharepoint')
             ->where('app_id', $file->id)
             ->when(
-                $c->documentTypeId === null,
-                fn ($q) => $q->whereNull('document_type_id'),
+                $c->documentTypeId !== null,
                 fn ($q) => $q->where('document_type_id', $c->documentTypeId)
             )
             ->first();

@@ -11,6 +11,7 @@ use App\Services\SharePoint\SharePointClient;
 use App\Services\SharePoint\SharePointFile;
 use Illuminate\Console\Command;
 use RuntimeException;
+use Unico\Core\Enums\DocumentStatus;
 
 class LinkSharePointRaccolte extends Command
 {
@@ -127,7 +128,7 @@ class LinkSharePointRaccolte extends Command
             'ai_confidence_score' => $confidence,
             'name' => $file->name,
             'document_url' => $file->webUrl !== null && strlen($file->webUrl) <= self::MAX_URL_LENGTH ? $file->webUrl : null,
-            'status' => 'uploaded',
+            'status' => DocumentStatus::UPLOADED->value,
             'sync_status' => 'synced',
             'source_app' => 'sharepoint',
             'app_id' => $file->id,

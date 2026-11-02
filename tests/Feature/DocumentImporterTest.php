@@ -168,6 +168,25 @@ class DocumentImporterTest extends TestCase
         $this->assertSame(['updated' => 1, 'created' => 1], $actions);
     }
 
+    public function test_rerun_does_not_duplicate_rows_whose_type_was_assigned_after_import(): void
+    {
+        $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+        Document::where('app_id', 'f2')->update(['document_type_id' => 2]);
+        $this->app->instance(AiClassifier::class, new class implements AiClassifier
+        {
+            public function classify(string $path, array $candidates): array
+            {
+                return [];
+            }
+        });
+
+        $this->importer()->run('1 - COLLABORATORI ATTIVI', commit: true);
+
+        $this->assertSame(1, Document::where('app_id', 'f1')->count());
+        $this->assertSame(2, Document::where('app_id', 'f2')->count());
+        $this->assertSame(0, Document::where('app_id', 'f2')->whereNull('document_type_id')->count());
+    }
+
     public function test_url_longer_than_column_is_kept_in_metadata_and_document_url_left_null(): void
     {
         $long = 'https://sp/'.str_repeat('a', 300);
