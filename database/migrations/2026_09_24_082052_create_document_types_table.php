@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('document_types')) {
+            return;
+        }
+
         Schema::create('document_types', function (Blueprint $table) {
             $table->comment('Anagrafica delle tipologie documentali con regole di validazione, AI e GDPR');
 

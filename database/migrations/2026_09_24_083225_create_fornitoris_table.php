@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('fornitoris')) {
+            return;
+        }
+
         Schema::create('fornitoris', function (Blueprint $table) {
             $table->comment('Anagrafica Agenti di commercio / Collaboratori (Fornitori di servizi)');
 
